@@ -141,8 +141,10 @@ var getAllFolder = function () {
 var getDocumentsFromFolder = function (event) {
   MendeleySDK.API.folders
     .retrievingDocuments(event)
-    .done(function (documents) {
-      console.log(documents);
+    .done(function (doc) {
+      console.log(doc);
+
+      return doc;
     })
     .fail(errorHandler);
 };
@@ -152,6 +154,59 @@ var getDocument = function (event) {
     .retrieve(event)
     .done(function (documents) {
       console.log(documents);
+    })
+    .fail(errorHandler);
+};
+
+var editDocument = function (event) {
+  MendeleySDK.API.documents
+    .retrieve(event)
+    .done(function (doc) {
+      // Langkah 2: Gunakan Compromise.js untuk mengekstrak keywords
+      const content = doc.title; // Ambil judul dokumen sebagai teks untuk analisis
+
+      // Ekstrak keyword menggunakan Compromise.js (misalnya, topik atau kata benda)
+      const extractedKeywords = window
+        .nlp(content)
+        .match("#Noun+")
+        .out("array")
+        .map((keyword) => keyword.replace(/[^a-zA-Z\s]/g, ""));
+
+      console.log("Keywords yang diekstrak:", extractedKeywords);
+      MendeleySDK.API.documents
+        .update(doc.id, { keywords: extractedKeywords })
+        .done((res) => console.log(res))
+        .fail(errorHandler);
+    })
+    .fail(errorHandler);
+};
+
+var editAllKeywordsOnDocuments = function (event) {
+  MendeleySDK.API.folders
+    .retrievingDocuments(event)
+    .done(function (doc) {
+      for (let i = 0; i < doc.length; i++) {
+        MendeleySDK.API.documents
+          .retrieve(doc[i].id)
+          .done(function (docx) {
+            // Langkah 2: Gunakan Compromise.js untuk mengekstrak keywords
+            const content = docx.title; // Ambil judul dokumen sebagai teks untuk analisis
+
+            // Ekstrak keyword menggunakan Compromise.js (misalnya, topik atau kata benda)
+            const extractedKeywords = window
+              .nlp(content)
+              .match("#Noun+")
+              .out("array")
+              .map((keyword) => keyword.replace(/[^a-zA-Z\s]/g, ""));
+
+            console.log("Keywords yang diekstrak:", extractedKeywords);
+            MendeleySDK.API.documents
+              .update(docx.id, { keywords: extractedKeywords })
+              .done((res) => console.log(res))
+              .fail(errorHandler);
+          })
+          .fail(errorHandler);
+      }
     })
     .fail(errorHandler);
 };
